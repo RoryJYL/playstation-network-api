@@ -1,25 +1,106 @@
-# Cloudflare Workers OpenAPI 3.1
+# PlayStation Network API Worker
 
-This is a Cloudflare Worker with OpenAPI 3.1 using [chanfana](https://github.com/cloudflare/chanfana) and [Hono](https://github.com/honojs/hono).
+Cloudflare Worker for fetching PSN profile data with caching support.
 
-This is an example project made to be used as a quick start into building OpenAPI compliant Workers that generates the
-`openapi.json` schema automatically from code and validates the incoming request to the defined parameters or request body.
+## Features
 
-## Get started
+- Fetch PSN user profile and trophy statistics
+- KV-based caching (24h TTL by default)
+- Force refresh with `?refresh=true` parameter
+- Auto-refresh via Cron Triggers (every 6 hours)
+- OpenAPI 3.1 documentation
 
-1. Sign up for [Cloudflare Workers](https://workers.dev). The free tier is more than enough for most use cases.
-2. Clone this project and install dependencies with `npm install`
-3. Run `wrangler login` to login to your Cloudflare account in wrangler
-4. Run `wrangler deploy` to publish the API to Cloudflare Workers
+## Setup
 
-## Project structure
+### 1. Install dependencies
 
-1. Your main router is defined in `src/index.ts`.
-2. Each endpoint has its own file in `src/endpoints/`.
-3. For more information read the [chanfana documentation](https://chanfana.pages.dev/) and [Hono documentation](https://hono.dev/docs).
+```bash
+pnpm install
+```
+
+### 2. Configure secrets
+
+Set your PSN NPSSO token:
+
+```bash
+# For local development, create .dev.vars
+echo "PSN_NPSSO=your_npsso_token_here" > .dev.vars
+
+# For production, use wrangler secrets
+wrangler secret put PSN_NPSSO
+```
+
+### 3. Create KV namespace
+
+```bash
+wrangler kv:namespace create PSN_CACHE
+```
+
+Update `wrangler.jsonc` with the returned KV namespace ID.
+
+### 4. Deploy
+
+```bash
+wrangler deploy
+```
+
+## API Endpoints
+
+### GET /api/psn
+
+Fetch PSN profile with trophy statistics.
+
+**Query Parameters:**
+- `refresh` (optional): Set to `true` to force cache refresh
+
+**Response:**
+```json
+{
+  "onlineId": "string",
+  "avatarUrl": "string",
+  "totalTrophies": 1234,
+  "bronzeTrophies": 800,
+  "silverTrophies": 300,
+  "goldTrophies": 100,
+  "platinumTrophies": 34,
+  "platinumGames": [
+    {
+      "title": "Game Title",
+      "iconUrl": "https://...",
+      "earnedDate": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
 
 ## Development
 
-1. Run `wrangler dev` to start a local instance of the API.
-2. Open `http://localhost:8787/` in your browser to see the Swagger interface where you can try the endpoints.
-3. Changes made in the `src/` folder will automatically trigger the server to reload, you only need to refresh the Swagger interface.
+Start local dev server:
+
+```bash
+pnpm dev
+```
+
+Open http://localhost:8787 for API documentation.
+
+## Cache Configuration
+
+- Default TTL: 24 hours (86400 seconds)
+- Auto-refresh: Every 6 hours via Cron Trigger
+- Storage: Cloudflare KV
+
+Modify `CACHE_TTL_SECONDS` in [wrangler.jsonc](wrangler.jsonc) to change cache duration.
+
+## Project Structure
+
+```
+src/
+├── index.ts              # Main router + scheduled handler
+├── types.ts              # Type definitions
+├── endpoints/
+│   └── psnProfile.ts     # PSN API endpoint
+└── services/
+    ├── psn.ts            # PSN data fetching
+    └── cache.ts          # KV cache layer
+```
+
