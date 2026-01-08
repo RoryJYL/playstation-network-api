@@ -11,7 +11,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.use("*", refererGuard);
 
 const openapi = fromHono(app, {
-	docs_url: "/",
+  docs_url: "/",
 });
 
 openapi.get("/api/psn", PSNProfileGet);
