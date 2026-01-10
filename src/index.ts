@@ -15,7 +15,7 @@ const openapi = fromHono(app, {
   docs_url: "/",
 });
 
-openapi.get("/api/psn", PSNProfileGet);
+openapi.get("/api/profile-summary", PSNProfileGet);
 
 export default {
   fetch: app.fetch,
