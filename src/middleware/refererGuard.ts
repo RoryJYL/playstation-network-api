@@ -28,7 +28,6 @@ export async function refererGuard(c: Context<{ Bindings: Env }>, next: Next) {
     return c.json(
       {
         error: "Access control not configured",
-        hint: 'Set ALLOWED_DOMAINS to "*" to allow all origins, or specify allowed domains',
       },
       500,
     );
