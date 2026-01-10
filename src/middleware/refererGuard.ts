@@ -27,7 +27,7 @@ export async function refererGuard(c: Context<{ Bindings: Env }>, next: Next) {
   if (allowedDomains.length === 0) {
     return c.json(
       {
-        error: "Access control not configured",
+        error: "Access control not configured.",
       },
       500,
     );
