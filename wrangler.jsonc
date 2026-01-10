@@ -1,6 +1,11 @@
 /**
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
+ *
+ * Secrets (set via: wrangler secret put <NAME>):
+ * - PSN_NPSSO: PlayStation Network NPSSO token
+ * - RESEND_API_KEY: Resend API key for sending emails
+ * - ALERT_EMAIL: Email address to receive alerts
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",

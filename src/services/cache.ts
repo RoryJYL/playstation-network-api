@@ -9,22 +9,14 @@ interface CachedData {
 
 export async function getCachedProfile(
   kv: KVNamespace,
-  ttlSeconds: number,
-): Promise<PSNProfileData | null> {
+): Promise<CachedData | null> {
   const cached = await kv.get<CachedData>(CACHE_KEY, "json");
 
   if (!cached) {
     return null;
   }
 
-  const now = Date.now();
-  const age = (now - cached.timestamp) / 1000;
-
-  if (age > ttlSeconds) {
-    return null;
-  }
-
-  return cached.data;
+  return cached;
 }
 
 export async function setCachedProfile(
