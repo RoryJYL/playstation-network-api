@@ -8,7 +8,7 @@ Cloudflare Worker for fetching PSN profile data with caching support.
 - KV-based caching (24h TTL by default)
 - Force refresh with `?refresh=true` parameter
 - Auto-refresh via Cron Triggers (every 6 hours)
-- **Referer-based access control** (only allow requests from specific domains)
+- **CORS-based access control** (configurable domain whitelist)
 - OpenAPI 3.1 documentation
 
 ## Setup
@@ -68,19 +68,20 @@ wrangler deploy
 
 ## Access Control
 
-This API is protected by **Referer/Origin whitelist**. You can configure access control with the `ALLOWED_DOMAINS` environment variable.
+This API uses **CORS-based access control** to restrict which domains can access the API from browsers.
 
 **Configuration options:**
 
-- `ALLOWED_DOMAINS="*"` - **Public mode**: Allow all origins (disables access control)
+- `ALLOWED_DOMAINS="*"` - **Public mode**: Allow all origins (no restrictions)
 - `ALLOWED_DOMAINS="yourblog.com,anotherdomain.com"` - **Restricted mode**: Only allow specific domains
-- Not configured - **Secure default**: Reject all requests with 500 error
+- Not configured - **Secure default**: Reject all cross-origin requests
 
 **How it works:**
 
-- Checks the `Referer` or `Origin` header of incoming requests
-- Blocks requests that don't match any allowed domain
-- Returns `403 Forbidden` for unauthorized access
+- Uses standard CORS mechanism with `Access-Control-Allow-Origin` headers
+- Browsers automatically enforce the policy
+- Only requests from allowed origins can access the API
+- Preflight (OPTIONS) requests are handled automatically
 
 **Example configurations:**
 
@@ -95,7 +96,7 @@ ALLOWED_DOMAINS=yourblog.com
 ALLOWED_DOMAINS=yourblog.com,www.yourblog.com,localhost:3000
 ```
 
-**Note:** This is suitable for static site blogs (SSG). The protection prevents direct access to your Workers URL but can be bypassed by spoofing headers. For stronger security, combine with Cloudflare Rate Limiting in the dashboard.
+**Note:** CORS is enforced by browsers. Tools like curl or Postman can bypass this by setting custom headers. For production APIs requiring strict security, consider adding Cloudflare Access or API key authentication.
 
 ## API Endpoints
 
@@ -143,14 +144,17 @@ Open <http://localhost:8787> for API documentation.
 You can test different access control modes:
 
 ```bash
-# Test 1: Direct access (will be blocked if ALLOWED_DOMAINS is configured)
+# Test 1: Direct browser access
+# Open http://localhost:8787/api/psn in browser
+# Will work if ALLOWED_DOMAINS=* or if opened from allowed domain
+
+# Test 2: CORS preflight (from browser console)
+fetch('http://localhost:8787/api/psn')
+  .then(r => r.json())
+  .then(console.log)
+
+# Test 3: curl (bypasses CORS - works regardless of ALLOWED_DOMAINS)
 curl http://localhost:8787/api/psn
-
-# Test 2: With matching referer (will succeed)
-curl -H "Referer: http://localhost:3000/" http://localhost:8787/api/psn
-
-# Test 3: Public mode (set ALLOWED_DOMAINS=* in .dev.vars)
-# Direct access will succeed
 ```
 
 ## Cache Configuration
@@ -165,11 +169,12 @@ Modify `CACHE_TTL_SECONDS` in [wrangler.jsonc](wrangler.jsonc) to change cache d
 
 ```text
 src/
-├── index.ts              # Main router + scheduled handler
+├── index.ts              # Main router with CORS configuration
 ├── types.ts              # Type definitions
 ├── endpoints/
 │   └── psnProfile.ts     # PSN API endpoint
 └── services/
     ├── psn.ts            # PSN data fetching
-    └── cache.ts          # KV cache layer
+    ├── cache.ts          # KV cache layer
+    └── email.ts          # Email alert service
 ```
