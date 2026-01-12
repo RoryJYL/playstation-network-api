@@ -8,7 +8,7 @@ import { fetchPSNProfile } from "./services/psn";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// CORS 中间件 - 根据 ALLOWED_DOMAINS 配置访问控制
+// 根据 ALLOWED_DOMAINS 配置访问控制
 app.use(
   "*",
   cors({
