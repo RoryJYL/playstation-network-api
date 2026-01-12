@@ -92,9 +92,15 @@ export async function fetchPSNProfile(
         earnedTrophies: title.earnedTrophies,
       }));
 
+    // avatar url is http, need to convert to https
+    const avatarUrl = userProfile.avatarUrls[0].avatarUrl.replace(
+      "http://",
+      "https://",
+    );
+
     return {
       onlineId: userProfile.onlineId || "Unknown",
-      avatarUrl: userProfile.avatarUrls[0].avatarUrl || "",
+      avatarUrl,
       totalTrophies:
         trophySummary.earnedTrophies.bronze +
         trophySummary.earnedTrophies.silver +
