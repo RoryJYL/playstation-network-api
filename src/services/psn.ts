@@ -90,6 +90,8 @@ export async function fetchPSNProfile(
         iconUrl: title.trophyTitleIconUrl,
         earnedDate: title.lastUpdatedDateTime,
         earnedTrophies: title.earnedTrophies,
+        platform: title.trophyTitlePlatform,
+        progress: title.progress,
       }));
 
     // avatar url is http, need to convert to https
