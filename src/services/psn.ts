@@ -230,7 +230,12 @@ export async function fetchPSNProfile(
         const details = await getTrophyDetails(kv, game.npCommunicationId);
         return {
           ...game,
-          trophyDetails: details || undefined,
+          trophyDetails: details
+            ? {
+                trophies: details.trophies,
+                updatedAt: details.updatedAt,
+              }
+            : undefined,
         };
       }),
     );
