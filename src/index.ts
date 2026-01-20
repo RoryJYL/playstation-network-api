@@ -60,7 +60,6 @@ export default {
           const profile = await fetchPSNProfile(env.PSN_CACHE, env.PSN_NPSSO);
           await setCachedProfile(env.PSN_CACHE, profile);
         } catch (error) {
-          // If both refresh token and npsso failed, send alert
           if (env.RESEND_API_KEY && env.ALERT_EMAIL) {
             try {
               await sendNpssoExpiryAlert(env.RESEND_API_KEY, env.ALERT_EMAIL);
