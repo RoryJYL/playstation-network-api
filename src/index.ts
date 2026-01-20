@@ -7,8 +7,6 @@ import { setCachedProfile } from "./services/cache";
 import { sendNpssoExpiryAlert } from "./services/email";
 import { fetchPSNProfile } from "./services/psn";
 
-// import { AdminInitGet } from "./endpoints/admin-init";
-
 const app = new Hono<{ Bindings: Env }>();
 
 // 根据 ALLOWED_DOMAINS 配置访问控制
@@ -48,7 +46,6 @@ const openapi = fromHono(app, {
 
 openapi.get("/api/profile-summary", PSNProfileGet);
 openapi.get("/api/trophy-details/:npCommunicationId", TrophyDetailsGet);
-// openapi.get("/api/admin/init-cache", AdminInitGet);
 
 export default {
   fetch: app.fetch,
