@@ -1,12 +1,13 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { AdminInitGet } from "./endpoints/admin-init";
 import { PSNProfileGet } from "./endpoints/psn-profile";
 import { TrophyDetailsGet } from "./endpoints/trophy-details";
 import { setCachedProfile } from "./services/cache";
 import { sendNpssoExpiryAlert } from "./services/email";
 import { fetchPSNProfile } from "./services/psn";
+
+// import { AdminInitGet } from "./endpoints/admin-init";
 
 const app = new Hono<{ Bindings: Env }>();
 
