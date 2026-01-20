@@ -190,7 +190,6 @@ export async function fetchPSNProfile(
         getUserTrophyProfileSummary({ accessToken }, "me", { headerOverrides }),
         getUserTitles({ accessToken }, "me", {
           limit: 800,
-          headerOverrides,
         }),
       ]);
 
