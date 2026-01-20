@@ -47,7 +47,7 @@ const openapi = fromHono(app, {
 
 openapi.get("/api/profile-summary", PSNProfileGet);
 openapi.get("/api/trophy-details/:npCommunicationId", TrophyDetailsGet);
-openapi.get("/api/admin/init-cache", AdminInitGet);
+// openapi.get("/api/admin/init-cache", AdminInitGet);
 
 export default {
   fetch: app.fetch,
