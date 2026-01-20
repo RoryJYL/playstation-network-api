@@ -5,6 +5,7 @@ Cloudflare Worker for fetching PSN profile data with caching support.
 ## Features
 
 - Fetch PSN user profile and trophy statistics
+- **Incremental trophy details caching** - Only fetches new platinum games
 - KV-based caching (24h TTL by default)
 - Force refresh with `?refresh=true` parameter
 - Auto-refresh via Cron Triggers (every 6 hours)
@@ -100,9 +101,9 @@ ALLOWED_DOMAINS=yourblog.com,www.yourblog.com,localhost:3000
 
 ## API Endpoints
 
-### GET /api/psn
+### GET /api/profile-summary
 
-Fetch PSN profile with trophy statistics.
+Fetch PSN profile with trophy statistics and platinum games list.
 
 **Query Parameters:**
 
@@ -123,10 +124,54 @@ Fetch PSN profile with trophy statistics.
     {
       "title": "Game Title",
       "iconUrl": "https://...",
-      "earnedDate": "2024-01-01T00:00:00.000Z"
+      "earnedDate": "2024-01-01T00:00:00.000Z",
+      "earnedTrophies": {
+        "bronze": 20,
+        "silver": 10,
+        "gold": 5,
+        "platinum": 1
+      },
+      "platform": "PS5",
+      "progress": 100,
+      "npCommunicationId": "NPWR12345_00"
     }
   ]
 }
+```
+
+### GET /api/trophy-details/:npCommunicationId
+
+Get detailed trophy information for a specific platinum game.
+
+**Parameters:**
+
+- `npCommunicationId`: The game's unique identifier from the profile response
+
+**Response:**
+
+```json
+{
+  "trophies": {
+    // Full trophy data from PSN API
+    // Contains all trophies (bronze, silver, gold, platinum)
+  },
+  "gameInfo": {
+    "title": "Game Title",
+    "iconUrl": "https://...",
+    "earnedDate": "2024-01-01T00:00:00.000Z"
+  },
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Example:**
+
+```bash
+# First, get the profile to obtain npCommunicationId
+curl http://localhost:8787/api/profile-summary
+
+# Then, fetch trophy details for a specific game
+curl http://localhost:8787/api/trophy-details/NPWR12345_00
 ```
 
 ## Development
@@ -165,16 +210,86 @@ curl http://localhost:8787/api/psn
 
 Modify `CACHE_TTL_SECONDS` in [wrangler.jsonc](wrangler.jsonc) to change cache duration.
 
+### Trophy Details Caching
+
+Trophy details are cached incrementally to avoid PSN API rate limiting:
+
+**How it works:**
+
+1. **First-time setup**: Run the initialization script to populate trophy details for all existing platinum games
+2. **Incremental updates**: The cron job (every 6 hours) automatically detects new platinum games and only fetches details for those
+3. **Rate limiting**: 300ms delay between each trophy detail request to avoid being blocked by PSN
+
+**Initial setup (one-time):**
+
+The initial trophy cache population should be done manually to avoid timeout issues with Cloudflare Worker's free tier limits.
+
+**Option A: Run as a local script (recommended)**
+
+```bash
+# Set your PSN_NPSSO environment variable
+export PSN_NPSSO=your_npsso_token
+
+# Configure wrangler to connect to remote KV
+# Then run the initialization script (needs manual KV integration)
+npx tsx scripts/init-trophy-cache.ts
+```
+
+**Option B: Trigger via scheduled event**
+
+Let the first cron execution populate the cache naturally. This works if you have a small number of platinum games (<10).
+
+**Option C: Manually add to KV**
+
+Use `wrangler kv:key put` to manually populate the cache:
+
+```bash
+# Example: Add trophy details for a game
+wrangler kv:key put --binding=PSN_CACHE "trophy_details:NPWR12345_00" '{"trophies":{...},"gameInfo":{...},"updatedAt":"..."}'
+
+# Add the index
+wrangler kv:key put --binding=PSN_CACHE "platinum_games_index" '{"games":[...],"lastUpdated":"..."}'
+```
+
+**After initialization:**
+
+The cron job will automatically maintain the cache:
+- Detects new platinum games every 6 hours
+- Only fetches trophy details for new games (not existing ones)
+- Updates the index to track all platinum games
+
+**Monitoring:**
+
+Check Worker logs to see incremental updates:
+
+```bash
+wrangler tail
+```
+
+You should see messages like:
+```
+发现 2 个新白金游戏，开始获取详情...
+正在获取 Game Title 的奖杯详情...
+索引已更新，共 34 个白金游戏
+```
+
 ## Project Structure
 
 ```text
 src/
-├── index.ts              # Main router with CORS configuration
-├── types.ts              # Type definitions
+├── index.ts                    # Main router with CORS configuration
+├── types.ts                    # Type definitions
 ├── endpoints/
-│   └── psnProfile.ts     # PSN API endpoint
-└── services/
-    ├── psn.ts            # PSN data fetching
-    ├── cache.ts          # KV cache layer
-    └── email.ts          # Email alert service
+│   ├── psn-profile.ts         # PSN profile summary endpoint
+│   └── trophy-details.ts      # Trophy details endpoint
+├── services/
+│   ├── psn.ts                 # PSN data fetching with incremental updates
+│   ├── cache.ts               # KV cache layer
+│   ├── trophy-cache.ts        # Trophy details KV operations
+│   └── email.ts               # Email alert service
+└── utils/
+    └── rate-limiter.ts        # Rate limiting utilities
+
+scripts/
+└── init-trophy-cache.ts       # One-time trophy cache initialization
 ```

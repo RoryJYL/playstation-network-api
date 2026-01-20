@@ -1,7 +1,9 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { PSNProfileGet } from "./endpoints/psnProfile";
+import { AdminInitGet } from "./endpoints/admin-init";
+import { PSNProfileGet } from "./endpoints/psn-profile";
+import { TrophyDetailsGet } from "./endpoints/trophy-details";
 import { setCachedProfile } from "./services/cache";
 import { sendNpssoExpiryAlert } from "./services/email";
 import { fetchPSNProfile } from "./services/psn";
@@ -44,6 +46,8 @@ const openapi = fromHono(app, {
 });
 
 openapi.get("/api/profile-summary", PSNProfileGet);
+openapi.get("/api/trophy-details/:npCommunicationId", TrophyDetailsGet);
+openapi.get("/api/admin/init-cache", AdminInitGet);
 
 export default {
   fetch: app.fetch,

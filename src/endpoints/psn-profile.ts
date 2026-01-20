@@ -39,12 +39,15 @@ export class PSNProfileGet extends OpenAPIRoute {
     const forceRefresh = c.req.query("refresh") === "true";
     const cacheTtl = Number(c.env.CACHE_TTL_SECONDS) || 86400;
     const cached = await getCachedProfile(c.env.PSN_CACHE);
-    const now = Date.now();
-    const age = (now - cached.timestamp) / 1000;
-    const isExpired = age > cacheTtl;
 
-    if (!forceRefresh && cached && !isExpired) {
-      return c.json(cached.data);
+    if (!forceRefresh && cached) {
+      const now = Date.now();
+      const age = (now - cached.timestamp) / 1000;
+      const isExpired = age > cacheTtl;
+
+      if (isExpired) {
+        return c.json(cached.data);
+      }
     }
 
     try {
